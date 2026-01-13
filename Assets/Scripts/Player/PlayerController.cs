@@ -13,17 +13,16 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
     }
 
     // Update is called once per frame
     void Update()
     {
-        float horizontalInput = Input.GetAxis("Horizonal");
+        float horizontalInput = Input.GetAxis("Horizontal");
         bool jumpInput = Input.GetButtonDown("Jump");
 
         Vector2 velocity = rb.linearVelocity;
-        velocity.x = horizontalInput + moveSpeed;
+        velocity.x = horizontalInput * moveSpeed;
         rb.linearVelocity = velocity;
 
         if (jumpInput )
