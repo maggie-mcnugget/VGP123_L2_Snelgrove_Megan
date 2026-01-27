@@ -6,26 +6,25 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     //public GameObject groundCheckTransform;
+    [Header("Ground Check Settings")]
     public LayerMask groundLayer;
+    public float groundCheckRadius = 0.02f;
 
+    [Header("Movement Settings")]
     public float moveSpeed = 5f;
     public float jumpForce = 10f;
-    public float groundCheckRadius = 0.02f;
+
 
     private Rigidbody2D _rb;
     private Collider2D _collider;
     private SpriteRenderer _sr;
     private Animator _anim;
+    private GroundCheck _groundCheck;
 
     private bool _isAttack = false;
     private bool _isGrounded = false;
     private bool _isJumpAttack = false;
-    private Vector2 groundCheckPos => CalculateGroundCheck();
-    private Vector2 CalculateGroundCheck()
-    {
-        Bounds bounds = _collider.bounds;
-        return new Vector2(bounds.center.x, bounds.min.y);
-    }
+    private bool _isFiring = false;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -34,6 +33,8 @@ public class PlayerController : MonoBehaviour
         _collider = GetComponent<Collider2D>();
         _sr = GetComponent<SpriteRenderer>();
         _anim = GetComponent<Animator>();
+
+        _groundCheck = new GroundCheck(_collider, _rb, groundCheckRadius, groundLayer);
 
         ////initalize the ground check object here rather than in the inpsector for safety - only if we use a gameobject to get our foot position
         //if (groundCheckTransform == null)
@@ -47,15 +48,22 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        _isGrounded = Physics2D.OverlapCircle(groundCheckPos, groundCheckRadius, groundLayer);
+        _isGrounded = _groundCheck.IsGrounded();
 
         //input handling
         float horizontalInput = Input.GetAxis("Horizontal");
+        float verticalInput = Input.GetAxisRaw("Vertical");
         bool jumpInput = Input.GetButtonDown("Jump");
         bool attackInput = Input.GetButton("Attack");
+        bool fireInput = Input.GetButtonDown("Fire");
 
-        //movement
-        _rb.linearVelocityX = horizontalInput * moveSpeed;
+        if (!_isFiring)
+        {
+            Vector2 velocity = _rb.linearVelocity;
+            velocity.x = horizontalInput * moveSpeed
+;           _rb.linearVelocity = velocity;
+        }
+       
 
 
         if (horizontalInput != 0) SpriteFlip(horizontalInput);
@@ -64,6 +72,11 @@ public class PlayerController : MonoBehaviour
         if (jumpInput && _isGrounded)
         {
             _rb.AddForce(new Vector2(0, jumpForce), ForceMode2D.Impulse);
+        }
+
+        if (fireInput && !_isFiring)
+        {
+            _isFiring = true;
         }
 
         if (!_isGrounded && attackInput)
@@ -86,6 +99,7 @@ public class PlayerController : MonoBehaviour
         _anim.SetBool("isGrounded", _isGrounded);
         _anim.SetBool("isAttack", _isAttack);
         _anim.SetBool("isJumpAttack", _isJumpAttack);
+        _anim.SetBool("Fire", _isFiring);
     }
 
     /// <summary>
@@ -93,4 +107,9 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     /// <param name="horizontalInput">The input received from Unity's input system</param>
     private void SpriteFlip(float horizontalInput) => _sr.flipX = (horizontalInput < 0);
+
+    public void ResetFireAnimation()
+    {
+        _isFiring = false;
+    }
 }
